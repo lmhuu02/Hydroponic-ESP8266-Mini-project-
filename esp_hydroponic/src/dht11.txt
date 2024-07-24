@@ -1,0 +1,32 @@
+https://dammedientu.vn/do-cam-bien-dht11-hien-thi-lcd16x2-i2c-driver-voi-esp8266-nodemcu
+
+
+#include "DHT.h"
+#define DHTPIN D4
+#define DHTTYPE DHT11 // DHT 11
+DHT dht ( DHTPIN, DHTTYPE ) ;
+LiquidCrystal_I2C lcd ( 0x27 ,2,1,0,4,5,6,7 ) ; // 0x27 is the I2C bus address for an unmodified backpack
+void setup () 
+{
+// activate LCD module
+lcd. begin ( 16,2 ) ; // for 16 x 2 LCD modules 
+lcd. setBacklightPin ( 3,POSITIVE ) ;
+lcd. setBacklight ( HIGH ) ;
+lcd. home () ; // set cursor to 0.0 
+lcd. print ( "nhiet do :" ) ;
+lcd. setCursor ( 0,1 ) ; // go to start of 2nd line 
+lcd. print ( "do am :" ) ;
+}
+void loop () 
+{
+delay ( 1000 ) ;
+float h = dht. readHumidity () ;
+// Read temperature as Celsius (the default)
+float t = dht. readTemperature () ;
+lcd. setCursor ( 11,0 ) ; 
+lcd. print ( t ) ;
+lcd. setCursor ( 9,1 ) ; // go to start of 2nd line 
+lcd. print ( h ) ;
+}
+///////////////////////////////////////////////// ///</span>
+ 

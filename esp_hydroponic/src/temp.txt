@@ -1,0 +1,187 @@
+/*
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+#define LED_BUILTIN_AUX 16
+
+static const uint8_t D0   = 16;
+static const uint8_t D1   = 5;
+static const uint8_t D2   = 4;
+static const uint8_t D3   = 0;
+static const uint8_t D4   = 2;
+static const uint8_t D5   = 14;
+static const uint8_t D6   = 12;
+static const uint8_t D7   = 13;
+static const uint8_t D8   = 15;
+static const uint8_t D9   = 3;
+static const uint8_t D10  = 1;
+name project: hydroponic mini
+language: C, ide VScode, tool platformIO
+build by: Esp8266, may bom, cb muc nuoc, firebase, application
+time: 9/2023
+@copyright 
+*/
+/*=======================================START FILE ============================*/
+#include <ESP8266WiFi.h>
+#include <Arduino.h>
+#include <Servo.h>
+#include <string.h>
+#include <WiFiUdp.h>
+
+#include <DHT.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+/*doc gia tri nhiet do do am len lcd 16x2*/
+#define DHTPIN 2     // Chân dữ liệu kết nối với chân 2 của ESP8266
+#define DHTTYPE DHT11   // DHT 11
+
+DHT dht(DHTPIN, DHTTYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Địa chỉ I2C của LCD 16x2
+
+/*define firebase*/
+#define FIREBASE_HOST "https://auto-fish-food-feeder-default-rtdb.firebaseio.com/" 
+#define FIREBASE_AUTH "W3uZzA7BFdIpAjK9xdu3CaxPpEB5leyLc1RRt2gx"
+#define WIFI_SSID "Live_9068."
+#define WIFI_PASSWORD "256kb8bit1"
+
+unsigned int count_time_wifi; 
+
+/*define control water pump*/
+#define enA 9
+#define in1 4
+#define in2 5
+#define enB 10
+#define in3 6
+#define in4 7
+
+int motorSpeedA = 0;
+int motorSpeedB = 0;
+
+const int ledPin = LED_BUILTIN;
+
+/*khai bao ham*/
+void control_pump();
+void lcd_dht11();
+
+
+/*=========================SETUP FUNCTION==========================*/
+void setup() {
+  
+  count_time_wifi = 0;
+  Serial.begin(9600);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
+  /*setup connect wifi and firebase*/
+  // WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // Serial.print("Connecting to Wi-Fi");
+  // while (WiFi.status() != WL_CONNECTED)
+  // {
+  //   Serial.print(".");
+  //   delay(200);
+  //   count_time_wifi++;
+  //   if(count_time_wifi > 500){
+  //     break;
+  //   }
+  // }
+  // if(count_time_wifi > 500){
+  //     Serial.println("Time out - connecting False Wifi");
+  //     Serial.println("plase reset module wifi ESP");
+  // }else{
+  //   Serial.println();
+  //   Serial.print("Connected Wifi with IP: ");
+  //   Serial.println(WiFi.localIP());
+  //   Serial.println();
+  // }
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  /*setup l298n contron pump*/
+  pinMode(enA, OUTPUT);
+  pinMode(enB, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+
+  /*setup lcd sensor dht11*/
+  lcd.begin(16, 2);               // Khởi tạo LCD
+  lcd.backlight();                // Bật đèn nền
+  dht.begin();                    // Khởi tạo cảm biến DHT11
+
+  pinMode(ledPin, OUTPUT);
+}
+
+/*-----------------------CONTROL WATER PUMP------------------------*/
+void control_pump(){
+  int num = 130; /*toc do may bom*/
+  int check_b_dd = 0;
+  /*tinh thoi gian*/
+  unsigned long time =millis();
+
+  /*chay may bom trong 6 phut*/
+  if((unsigned long) (millis() - time) > 1000){
+    // Set Motor A may bom chinh: bat trong 6p
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW);
+    analogWrite(enA, num);
+  }
+  /*tat may bom trong 15p*/
+  else if((unsigned long) (millis() - time) > 1000){
+    // Set Motor A may bom chinh: tat trong 15p
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, LOW);
+    // cập nhật lại biến time
+    time = millis();
+  }
+  
+    if(check_b_dd == 1){
+      // Set Motor B may bom dung dich: khi nhan nut thi moi bat
+      digitalWrite(in3, HIGH);
+      digitalWrite(in4, LOW);
+    }
+    
+}
+/*-----------------------CONTROL DHT11 SHOW LCD 16X2------------------------*/
+void lcd_dht11(){
+  float humidity = dht.readHumidity();    // Đọc độ ẩm từ DHT11
+  float temperature = dht.readTemperature();  // Đọc nhiệt độ từ DHT11
+
+  lcd.setCursor(0, 0);
+  lcd.print("Temp: ");
+  lcd.print(temperature);
+  lcd.print("C");
+  
+  lcd.setCursor(0, 1);
+  lcd.print("Humidity: ");
+  lcd.print(humidity);
+  lcd.print("%");
+
+  delay(2000);  // Delay 2 giây
+}
+
+void blink(){
+    // Bật LED
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+
+  // Tắt LED
+  digitalWrite(ledPin, LOW);
+  delay(90);
+      // Bật LED
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+
+  // Tắt LED
+  digitalWrite(ledPin, LOW);
+  delay(2000);
+}
+
+/*=======================FUNCTION LOOP========================*/
+void loop() {
+  // lcd_dht11();
+  // blink();
+  digitalWrite(ledPin, HIGH);
+  delay(4000);
+}
+/*=========================END FILE==========================*/

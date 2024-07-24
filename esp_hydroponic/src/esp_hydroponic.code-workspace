@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "esp_hydroponic",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"ratio": "cpp"
+		}
+	}
+}

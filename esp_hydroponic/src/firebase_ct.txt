@@ -1,0 +1,248 @@
+/*
+name project: auto fish food feeder - time: 4/2023
+language: C, ide VScode, tool platformIO
+build by: Esp8266, morto Servo, firebase
+@copyright @LeHuu02
+*/
+/*=======================================START FILE ============================*/
+#include <FirebaseEsp8266.h>
+#include <ESP8266WiFi.h>
+#include <Arduino.h>
+#include <Servo.h>
+#include <string.h>
+#include <SimpleTimer.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+
+#define FIREBASE_HOST "https://auto-fish-food-feeder-default-rtdb.firebaseio.com/" 
+#define FIREBASE_AUTH "W3uZzA7BFdIpAjK9xdu3CaxPpEB5leyLc1RRt2gx"
+#define WIFI_SSID "Welcome!"
+#define WIFI_PASSWORD "999999999"
+// #define WIFI_SSID "VNPT"
+// #define WIFI_PASSWORD "tamso89@"
+
+//Define FirebaseESP8266 data object
+FirebaseData firebaseData;
+FirebaseData ledData;
+FirebaseJson json;
+
+/*define servo*/
+Servo mysv; /*GPIO15 pin D8*/
+int pos = 0; 
+
+/*timer*/
+SimpleTimer timer;
+int Timer1;
+
+/*init var*/
+String status_st;
+String st1 = "on";
+int count_time_wifi;
+int count_down;
+int dem = 0;
+char date[100];
+
+int kt = 0, kt1 = 0, giay, phut, gio;
+
+/*time client*/
+WiFiUDP ntpUDP;
+NTPClient timeclient(ntpUDP, "pool.ntp.org", 7*3600);
+byte ngayt, thangt, giot, phutt, giayt;
+unsigned int namt;
+unsigned long t1 = 0;
+
+void control_servo();
+void load_data_status();
+void hengio_firebase();
+void set_realtime();
+
+/*=========================SETUP FUNCTION==========================*/
+void setup() {
+  
+  count_time_wifi = 0;
+  Serial.begin(9600);
+  mysv.attach(15);  //GPIO15 control servo - pin D8 in esp8266
+  mysv.write(0);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
+  // /*setup timer interrupt - countdown */
+  // Timer1 = timer.setInterval(count_down,control_servo);
+
+  /*setup connect wifi and firebase*/
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(200);
+    count_time_wifi++;
+    if(count_time_wifi > 500){
+      break;
+    }
+  }
+  if(count_time_wifi > 500){
+      Serial.println("Time out - connecting False Wifi");
+      Serial.println("plase reset module wifi ESP");
+  }else{
+    Serial.println();
+    Serial.print("Connected Wifi with IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+  }
+
+    /*time client setup*/
+    timeclient.begin();
+    timeclient.setTimeOffset(25200);
+
+  /*setup firebase*/
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+  Firebase.reconnectWiFi(true);
+
+  /*set default data get to firebase: off*/
+  Firebase.setString(firebaseData,"data/status","0");
+  Firebase.setInt(firebaseData,"data/time",0);
+
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  //Timer1 = timer.setInterval((giay*1000),control_servo);
+}
+
+/*-----------------------------CONTROL SERVO-------------------------*/
+void control_servo(){
+  Serial.println("Servo: on -- cho ca an");
+  dem = 0;
+
+  /*hien thi thoi gian cho ca an*/
+  set_realtime();
+
+  /*day du lieu len firebase truong status: 1*/
+  Firebase.setString(firebaseData,"data/status","1");
+
+  
+  /*dieu khien servo quay 180 do*/
+  for (pos = 0; pos <= 180; pos += 10) { 
+    mysv.write(pos);              
+    //delay(500);
+    
+  }
+  /*servo quay lai vi tri ban dau*/
+  for (pos = 180; pos > 0; pos -= 10) { 
+    mysv.write(pos);               
+    //delay(500);
+  }
+
+  /*day du lieu len firebase truong status: 0*/
+  Firebase.setString(firebaseData,"data/status","0");
+}
+
+/*-------------------------load data firebase------------------------*/
+void load_data_status(){
+  
+  /*lay du lieu tu firebase truong status: neu = 1 thi goi ham control server*/
+  if(Firebase.getString(firebaseData,"data/status")){
+    //Serial.print(dem++);
+    //Serial.print("  ");
+  
+    /*kiem tra xem status co bang 1 hay khong*/
+    if(firebaseData.stringData() == "1"){
+      control_servo();
+      delay(500);
+
+      /*in ra serial*/
+      Serial.print(firebaseData.stringData());
+      Firebase.getString(firebaseData,"data/status","0");
+      Serial.print(firebaseData.stringData());
+    }
+    delay(50);
+  }
+}
+
+void set_realtime(){
+     /*lay thoi gian thuc tu serve*/
+    timeclient.update();
+    unsigned long epochTime = timeclient.getEpochTime();
+    String formatetedTime = timeclient.getFormattedTime();
+    struct tm *ptm = gmtime ((time_t *)&epochTime);
+
+    /*luu thoi gian thuc vao bien ngay thang nam*/
+    ngayt = ptm->tm_mday;
+    thangt = ptm->tm_mon + 1;
+    namt = ptm->tm_year + 1900;
+
+    /*luu thoi gian thuc lay duoc vao bien gio, phut, giay*/
+    giot = timeclient.getHours();
+    phutt = timeclient.getMinutes();
+    giayt = timeclient.getSeconds();
+
+    // Serial.print(ngayt);
+    // Serial.print("/");
+    // Serial.print(thangt);
+    // Serial.print("/");
+    // Serial.print(namt);
+    // Serial.print("--");
+
+    Serial.print( giot);
+    Serial.print(":");
+    Serial.print(phutt);
+    Serial.print(":");
+    Serial.println(giayt);
+
+    //sprintf(date, "%s/%s/%s - %s:%s:%s\n", (char)ngayt, (char)thangt,(char)namt, (char)giot,(char)phutt,(char)giayt);
+    //Serial.println(date);
+}
+
+// void load_count_down(){
+//   if(Firebase.getInt(firebaseData,"data/min_count_down")){
+//     count_down = firebaseData.intData();
+//     Serial.print("minute: ");
+//     Serial.println(count_down);
+//     /*setup timer interrupt - countdown */
+//   Timer1 = timer.setInterval(count_down,control_servo);
+//   }
+// }
+
+
+void hengio_firebase(){
+  //lay du lieu tu firebase: kiem tra check co thay doi khong
+  if(Firebase.getInt(firebaseData,"data/hengio/check")){
+    kt = firebaseData.intData();  //luu id check vao bien kt
+
+    /*kiem tra neu co sư thay doi cua id check moi thuc hien*/
+    if(kt != kt1){
+
+      /*reset and delete timer*/
+      timer.deleteTimer(Timer1);
+      timer.restartTimer(Timer1);
+
+      /*gan kiem tra truoc cho ktra sau*/
+      kt1 = kt;
+
+      /*lay gio va phut cai dat tu firebase ve hen gio*/
+      Firebase.getInt(firebaseData,"data/hengio/gio");
+      gio = firebaseData.intData();
+      Firebase.getInt(firebaseData,"data/hengio/phut");
+      phut = firebaseData.intData();
+
+      /*tinh gio, phut ra giay de truyen vao ngat timer*/
+      giay = (gio*60 + phut)*60;
+      if(giay != 0){
+        Timer1 = timer.setInterval(giay*1000,control_servo);
+        set_realtime();
+        /*in ra thong bao so giay va gtri kiem tra*/
+        Serial.printf("  so giay la: %d",giay);
+        Serial.printf(" kt : %d -- kt1 : %d ", kt, kt1);    
+        Serial.println();
+      }
+    }
+  }
+}
+
+/*==========================FUNCTION LOOP===========================*/
+void loop() {
+  load_data_status();
+  hengio_firebase();
+  timer.run();
+  set_realtime();
+}
+/*===============================END FILE==============================*/

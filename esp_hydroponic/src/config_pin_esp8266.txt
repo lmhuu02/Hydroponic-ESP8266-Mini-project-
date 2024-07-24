@@ -1,0 +1,32 @@
+/*
+name project: hydroponic mini
+language: C, ide VScode, tool platformIO
+build by: Esp8266, may bom, cb muc nuoc, firebase, application
+time: 9/2023
+@copyright 
+*/
+
+Chuc nang, nguyen ly hoat dong:
+    1. dieu khien may bom chay 6p ngung 15p
+    2. bom dung dich dinh duong vao binh chua: 
+        uoc luong ti le: vd 10ml dd/ 1000ml 
+        xong kiem tra nong do ph, chat luong dinh duong
+    3. kiem tra muc nuoc: neu nho hon muc quy dinh se canh bao
+    4. hien thi nhiet do do am
+    5. dieu khien den led tren dien thoai
+
+    6. hien thi len application thong tin:
+        - trang thai may bom: bat/tat
+        - trang thai muc nuoc: du/thieu
+        - trang thai nhiet do, do am: to,%
+        -
+        - dieu khien may bom
+        - dieu khien led 
+
+Ket noi chan, pin tren Esp8266
+
+    relay maybom1: 
+    relay maybom2:
+    led:
+    dht11:
+    muc nuoc: 
